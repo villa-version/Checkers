@@ -52,23 +52,29 @@ class Checker:
         else:
             return False
 
-    def move_by_dir(self, direction, grid, prog):
+    def move_by_dir(self, direction, grid, prog, check_info_for_occupied_blocks, update_info_for_occupied_blocks):
+        check_info_for_occupied_blocks()
         if prog:
             if direction == 'LEFT':
-                self.x, self.y = grid[self.y + 1][self.x - 1].x, grid[self.y + 1][self.x - 1].y
-                return True
+                if not grid[self.y + 1][self.x - 1].occupied:
+                    self.x, self.y = grid[self.y + 1][self.x - 1].x, grid[self.y + 1][self.x - 1].y
+                    return True
             elif direction == 'RIGHT':
-                self.x, self.y = grid[self.y + 1][self.x + 1].x, grid[self.y + 1][self.x + 1].y
-                return True
-            return False
+                if not grid[self.y + 1][self.x + 1].occupied:
+                    self.x, self.y = grid[self.y + 1][self.x + 1].x, grid[self.y + 1][self.x + 1].y
+                    return True
+                return False
         elif not prog:
             if direction == 'LEFT':
-                self.x, self.y = grid[self.y - 1][self.x - 1].x, grid[self.y - 1][self.x - 1].y
-                return True
+                if not grid[self.y - 1][self.x - 1].occupied:
+                    self.x, self.y = grid[self.y - 1][self.x - 1].x, grid[self.y - 1][self.x - 1].y
+                    return True
             elif direction == 'RIGHT':
-                self.x, self.y = grid[self.y - 1][self.x + 1].x, grid[self.y - 1][self.x + 1].y
-                return True
-            return False
+                if not grid[self.y - 1][self.x + 1].occupied:
+                    self.x, self.y = grid[self.y - 1][self.x + 1].x, grid[self.y - 1][self.x + 1].y
+                    return True
+                return False
+        update_info_for_occupied_blocks()
 
 
 class MainController:
@@ -163,7 +169,9 @@ class MainController:
 
     def move(self):
         try:
-            if self.pressed_on_a_checker.move_by_dir(self.dir, self.grid, self.progress):
+            if self.pressed_on_a_checker.move_by_dir(self.dir, self.grid, self.progress,
+                                                     self.check_info_for_occupied_blocks,
+                                                     self.update_info_for_occupied_blocks):
                 self.dir = 'NOTHING'
                 self.pressed_on_a_checker = None
                 self.progress = not self.progress
