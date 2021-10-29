@@ -5,25 +5,26 @@ CELL_SIZE, CELL_NUMBER = 100, 8
 
 
 class Cell:
-    def __init__(self, x, y, screen, color, size_of_borders):
+    def __init__(self, x, y, screen, color, size_of_borders, occupied):
         self.x = x
         self.y = y
         self.screen = screen
         self.color = color
         self.last_color = color
         self.size_of_borders = size_of_borders
+        self.occupied = occupied
 
     def draw(self):
         if self.color == 0:
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE), CELL_SIZE, CELL_SIZE)
-            pygame.draw.rect(self.screen, (255, 0, 255), obj)
+            pygame.draw.rect(self.screen, (0, 255, 0), obj)
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE),
                               CELL_SIZE - self.size_of_borders,
                               CELL_SIZE - self.size_of_borders)
             pygame.draw.rect(self.screen, (255, 255, 255), obj)
         elif self.color == 1:
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE), CELL_SIZE, CELL_SIZE)
-            pygame.draw.rect(self.screen, (255, 0, 255), obj)
+            pygame.draw.rect(self.screen, (0, 255, 0), obj)
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE),
                               CELL_SIZE - self.size_of_borders,
                               CELL_SIZE - self.size_of_borders)
@@ -33,7 +34,7 @@ class Cell:
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE),
                               CELL_SIZE,
                               CELL_SIZE)
-            pygame.draw.rect(self.screen, (255, 0, 255), obj)
+            pygame.draw.rect(self.screen, (0, 255, 0), obj)
 
 
 class Checker:
@@ -51,6 +52,24 @@ class Checker:
         else:
             return False
 
+    def move_by_dir(self, direction, grid, prog):
+        if prog:
+            if direction == 'LEFT':
+                self.x, self.y = grid[self.y + 1][self.x - 1].x, grid[self.y + 1][self.x - 1].y
+                return True
+            elif direction == 'RIGHT':
+                self.x, self.y = grid[self.y + 1][self.x + 1].x, grid[self.y + 1][self.x + 1].y
+                return True
+            return False
+        elif not prog:
+            if direction == 'LEFT':
+                self.x, self.y = grid[self.y - 1][self.x - 1].x, grid[self.y - 1][self.x - 1].y
+                return True
+            elif direction == 'RIGHT':
+                self.x, self.y = grid[self.y - 1][self.x + 1].x, grid[self.y - 1][self.x + 1].y
+                return True
+            return False
+
 
 class MainController:
     def __init__(self, screen):
@@ -60,6 +79,9 @@ class MainController:
         self.checkers = [[], []]  # black and white
         self.spawn_checkers()
         self.click_state = False
+        self.dir = None
+        self.pressed_on_a_checker = None
+        self.progress = True
 
     def spawn_checkers(self):
         for i in range(1, 8, 2):
@@ -104,11 +126,24 @@ class MainController:
                     if counter == -1:
                         counter = 1
 
-                self.grid[y].append(Cell(x, y, self.screen, number_of_color_sequence[counter], 0))
+                self.grid[y].append(Cell(x, y, self.screen, number_of_color_sequence[counter], 0, False))
 
     def update(self):
+        self.check_info_for_occupied_blocks()
         self.draw()
+        self.excretion()
         self.move()
+        self.update_info_for_occupied_blocks()
+
+    def check_info_for_occupied_blocks(self):
+        for team in self.checkers:
+            for checker in team:
+                self.grid[checker.y][checker.x].occupied = True
+
+    def update_info_for_occupied_blocks(self):
+        for team in self.checkers:
+            for checker in team:
+                self.grid[checker.y][checker.x].occupied = False
 
     def draw(self):
         for row in self.grid:
@@ -118,7 +153,7 @@ class MainController:
             for checker in team:
                 checker.draw()
 
-    def chek_neighbors(self, checker):
+    def check_neighbors(self, checker):
         if checker.x == 0:
             return 'LEFT'
         elif checker.x == CELL_NUMBER-1:
@@ -127,24 +162,53 @@ class MainController:
             return 'LEFT-RIGHT'
 
     def move(self):
-        for team in self.checkers:
-            for checker in team:
+        try:
+            if self.pressed_on_a_checker.move_by_dir(self.dir, self.grid, self.progress):
+                self.dir = 'NOTHING'
+                self.pressed_on_a_checker = None
+                self.progress = not self.progress
+        except AttributeError:
+            pass
+
+    def excretion(self):
+        if self.progress:
+            for checker in self.checkers[0]:
                 mx, my = pygame.mouse.get_pos()
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
                     if self.click_state:
+                        self.pressed_on_a_checker = checker
                         self.click_state = False
                         self.grid[by][bx].size_of_borders = 5
-                        if self.chek_neighbors(checker) == 'LEFT-RIGHT':
+                        if self.check_neighbors(checker) == 'LEFT-RIGHT':
                             self.grid[checker.y + 1][checker.x + 1].color = 2
                             self.grid[checker.y + 1][checker.x - 1].color = 2
-                        elif self.chek_neighbors(checker) == 'LEFT':
+                        elif self.check_neighbors(checker) == 'LEFT':
                             self.grid[checker.y + 1][checker.x + 1].color = 2
-                        elif self.chek_neighbors(checker) == 'RIGHT':
+                        elif self.check_neighbors(checker) == 'RIGHT':
                             self.grid[checker.y + 1][checker.x - 1].color = 2
 
-                else:
-                    self.grid[by][bx].size_of_borders = 0
+                    else:
+                        self.grid[by][bx].size_of_borders = 0
+        elif not self.progress:
+            for checker in self.checkers[1]:
+                mx, my = pygame.mouse.get_pos()
+                bx, by = checker.x, checker.y
+                if checker.pressed(mx, my):
+                    if self.click_state:
+                        self.pressed_on_a_checker = checker
+                        self.click_state = False
+                        self.grid[by][bx].size_of_borders = 5
+                        if self.check_neighbors(checker) == 'LEFT-RIGHT':
+                            self.grid[checker.y - 1][checker.x + 1].color = 2
+                            self.grid[checker.y - 1][checker.x - 1].color = 2
+                        elif self.check_neighbors(checker) == 'LEFT':
+                            self.grid[checker.y - 1][checker.x + 1].color = 2
+                        elif self.check_neighbors(checker) == 'RIGHT':
+                            self.grid[checker.y - 1][checker.x - 1].color = 2
+
+                    else:
+                        self.grid[by][bx].size_of_borders = 0
 
 
 def main():
@@ -159,6 +223,13 @@ def main():
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 main_controller.click_state = True
+            elif event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_a:
+                    main_controller.dir = 'LEFT'
+                elif event.key == pygame.K_d:
+                    main_controller.dir = 'RIGHT'
+                else:
+                    main_controller.dir = 'NOTHING'
 
         screen.fill((255, 255, 255))
         main_controller.update()
