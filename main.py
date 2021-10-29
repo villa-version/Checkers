@@ -1,6 +1,5 @@
 import pygame, sys
 
-
 CELL_SIZE, CELL_NUMBER = 100, 8
 
 
@@ -38,13 +37,15 @@ class Cell:
 
 
 class Checker:
-    def __init__(self, x, y, screen):
+    def __init__(self, x, y, screen, side_of_the_team):
         self.x = x
         self.y = y
         self.screen = screen
+        self.side_of_the_team = side_of_the_team
 
     def draw(self):
-        pygame.draw.circle(self.screen, (255, 255, 0), (int((self.x + 0.5) * CELL_SIZE), int((self.y + 0.5) * CELL_SIZE)), 50)
+        pygame.draw.circle(self.screen, (255, 255, 0),
+                           (int((self.x + 0.5) * CELL_SIZE), int((self.y + 0.5) * CELL_SIZE)), 50)
 
     def pressed(self, mx, my):
         if self.x * CELL_SIZE < mx < (self.x + 1) * CELL_SIZE and self.y * CELL_SIZE < my < (self.y + 1) * CELL_SIZE:
@@ -90,19 +91,17 @@ class MainController:
         self.progress = True
 
     def spawn_checkers(self):
-        for i in range(1, 8, 2):
-            self.checkers[0].append(Checker(1*i, 0, self.screen))
-        for i in range(0, 8, 2):
-            self.checkers[0].append(Checker(1*i, 1, self.screen))
-        for i in range(1, 8, 2):
-            self.checkers[0].append(Checker(1*i, 2, self.screen))
+        white_pos_x = [1, 0, 1]
+        black_pos_x = [0, 1, 0]
+        # WHITE TEAM
+        for j in range(len(white_pos_x)):
+            for i in range(white_pos_x[j], 8, 2):
+                self.checkers[0].append(Checker(1 * i, j, self.screen, 'WHITE'))
 
-        for i in range(0, 8, 2):
-            self.checkers[1].append(Checker(1*i, CELL_NUMBER-1, self.screen))
-        for i in range(1, 8, 2):
-            self.checkers[1].append(Checker(1*i, CELL_NUMBER-2, self.screen))
-        for i in range(0, 8, 2):
-            self.checkers[1].append(Checker(1*i, CELL_NUMBER-3, self.screen))
+        # BLACK TEAM
+        for j in range(len(black_pos_x)):
+            for i in range(black_pos_x[j], 8, 2):
+                self.checkers[1].append(Checker(1 * i, CELL_NUMBER - 1 - j, self.screen, 'BLACK'))
 
     def spawn_grid(self):
         number_of_color_sequence = ()
@@ -114,11 +113,11 @@ class MainController:
             self.grid.append([])
         for y in r:
             row_counter += 1
-            if int(row_counter/2) == float(row_counter/2):
+            if int(row_counter / 2) == float(row_counter / 2):
                 counter = 2
                 number_of_color_sequence = (1, 0)
                 bool_ = False
-            elif int(row_counter/2) != float(row_counter/2):
+            elif int(row_counter / 2) != float(row_counter / 2):
                 number_of_color_sequence = (0, 1)
                 counter = 0
                 bool_ = True
@@ -151,6 +150,17 @@ class MainController:
             for checker in team:
                 self.grid[checker.y][checker.x].occupied = False
 
+    def check_ways_to_beat_enemy(self):
+        if self.progress:
+            if 3 <= self.pressed_on_a_checker.x <= CELL_NUMBER - 3 and 3 <= self.pressed_on_a_checker.y <= CELL_NUMBER - 3:
+                if (self.grid[self.pressed_on_a_checker.y + 1][self.pressed_on_a_checker.x - 1].occupied and
+                        not self.grid[self.pressed_on_a_checker.y + 2][self.pressed_on_a_checker.x - 2].occupied):
+                    if self.dir == 'LEFT':
+                        print(1)
+
+        elif not self.progress:
+            pass
+
     def draw(self):
         for row in self.grid:
             for block in row:
@@ -162,7 +172,7 @@ class MainController:
     def check_neighbors(self, checker):
         if checker.x == 0:
             return 'LEFT'
-        elif checker.x == CELL_NUMBER-1:
+        elif checker.x == CELL_NUMBER - 1:
             return 'RIGHT'
         else:
             return 'LEFT-RIGHT'
@@ -247,4 +257,3 @@ def main():
 
 if __name__ == '__main__':
     main()
-
