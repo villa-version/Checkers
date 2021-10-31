@@ -96,6 +96,9 @@ class MainController:
         self.dir = None
         self.pressed_on_a_checker = None
         self.progress = True
+        self.score_white_team = 0
+        self.score_black_team = 0
+        self.text_score_teams = pygame.font.Font(None, 48)
 
     def spawn_checkers(self):
         white_indent = [1, 0, 1]
@@ -149,7 +152,7 @@ class MainController:
     def add_info_of_occupied_blocks(self):
         for team in self.checkers:
             for checker in team:
-                self.grid[checker.y][checker.x].occupied = checker.side_of_the_team
+                self.grid[checker.y][checker.x].occupied = checker
 
     def check_ways_to_beat_enemy(self):
         try:
@@ -157,20 +160,51 @@ class MainController:
                 if self.dir == 'LEFT':
                     if 3 <= self.pressed_on_a_checker.x:
                         if (self.grid[self.pressed_on_a_checker.y + 1][
-                            self.pressed_on_a_checker.x - 1].occupied == 'BLACK' and
+                            self.pressed_on_a_checker.x - 1].occupied.side_of_the_team == 'BLACK' and
                                 self.grid[self.pressed_on_a_checker.y + 2][
                                     self.pressed_on_a_checker.x - 2].occupied is None):
-                            print(1)
+                            self.score_white_team += 5
+                            self.checkers[1].remove(self.grid[self.pressed_on_a_checker.y + 1]
+                                                    [self.pressed_on_a_checker.x - 1].occupied)
+                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x - 2,
+                                                                                        self.pressed_on_a_checker.y + 2)
+
                 elif self.dir == 'RIGHT':
-                    if self.pressed_on_a_checker.y <= CELL_NUMBER - 3:
+                    if self.pressed_on_a_checker.y <= CELL_NUMBER - 4:
                         if (self.grid[self.pressed_on_a_checker.y + 1][
-                            self.pressed_on_a_checker.x + 1].occupied == 'BLACK' and
+                            self.pressed_on_a_checker.x + 1].occupied.side_of_the_team == 'BLACK' and
                                 self.grid[self.pressed_on_a_checker.y + 2][
                                     self.pressed_on_a_checker.x + 2].occupied is None):
-                            print(2)
+                            self.score_white_team += 5
+                            self.checkers[1].remove(self.grid[self.pressed_on_a_checker.y + 1]
+                                                             [self.pressed_on_a_checker.x + 1].occupied)
+                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x + 2,
+                                                                                        self.pressed_on_a_checker.y + 2)
 
             elif not self.progress:
-                pass
+                if self.dir == 'LEFT':
+                    if 3 <= self.pressed_on_a_checker.x:
+                        if (self.grid[self.pressed_on_a_checker.y - 1][
+                            self.pressed_on_a_checker.x - 1].occupied.side_of_the_team == 'WHITE' and
+                                self.grid[self.pressed_on_a_checker.y - 2][
+                                    self.pressed_on_a_checker.x - 2].occupied is None):
+                            self.score_black_team += 5
+                            self.checkers[0].remove(self.grid[self.pressed_on_a_checker.y - 1]
+                                                    [self.pressed_on_a_checker.x - 1].occupied)
+                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x - 2,
+                                                                                        self.pressed_on_a_checker.y - 2)
+
+                elif self.dir == 'RIGHT':
+                    if self.pressed_on_a_checker.y <= CELL_NUMBER - 4:
+                        if (self.grid[self.pressed_on_a_checker.y - 1][
+                            self.pressed_on_a_checker.x + 1].occupied.side_of_the_team == 'WHITE' and
+                                self.grid[self.pressed_on_a_checker.y - 2][
+                                    self.pressed_on_a_checker.x + 2].occupied is None):
+                            self.score_black_team += 5
+                            self.checkers[0].remove(self.grid[self.pressed_on_a_checker.y - 1]
+                                                    [self.pressed_on_a_checker.x + 1].occupied)
+                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x + 2,
+                                                                                        self.pressed_on_a_checker.y - 2)
         except AttributeError:
             pass
 
@@ -181,6 +215,11 @@ class MainController:
         for team in self.checkers:
             for checker in team:
                 checker.draw()
+
+        text_score = self.text_score_teams.render(str(self.score_white_team), True, (0, 0, 0))
+        self.screen.blit(text_score, (25, 25))
+        text_score = self.text_score_teams.render(str(self.score_black_team), True, (0, 0, 0))
+        self.screen.blit(text_score, (CELL_NUMBER*CELL_SIZE-45, CELL_NUMBER*CELL_SIZE-45))
 
     def check_neighbors(self, checker):
         if checker.x == 0:
@@ -232,7 +271,10 @@ class MainController:
 
 
 def main():
+    project_name = 'Checkers'
     screen = pygame.display.set_mode((CELL_SIZE * CELL_NUMBER, CELL_SIZE * CELL_NUMBER))
+    pygame.display.set_caption(project_name)
+    pygame.font.init()
     fpsClock = pygame.time.Clock()
     main_controller = MainController(screen)
 
