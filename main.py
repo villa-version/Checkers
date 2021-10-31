@@ -168,6 +168,8 @@ class MainController:
                                                     [self.pressed_on_a_checker.x - 1].occupied)
                             self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x - 2,
                                                                                         self.pressed_on_a_checker.y + 2)
+                            self.grid[self.pressed_on_a_checker.y - 2][self.pressed_on_a_checker.x + 2].occupied = None
+                            self.grid[self.pressed_on_a_checker.y - 1][self.pressed_on_a_checker.x + 1].occupied = None
 
                 elif self.dir == 'RIGHT':
                     if self.pressed_on_a_checker.y <= CELL_NUMBER - 4:
@@ -180,6 +182,8 @@ class MainController:
                                                              [self.pressed_on_a_checker.x + 1].occupied)
                             self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x + 2,
                                                                                         self.pressed_on_a_checker.y + 2)
+                            self.grid[self.pressed_on_a_checker.y - 2][self.pressed_on_a_checker.x - 2].occupied = None
+                            self.grid[self.pressed_on_a_checker.y - 1][self.pressed_on_a_checker.x - 1].occupied = None
 
             elif not self.progress:
                 if self.dir == 'LEFT':
