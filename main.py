@@ -53,7 +53,7 @@ class Checker:
     def draw(self):
         if self.side_of_the_team == 'WHITE':
             pygame.draw.circle(self.screen, (255, 255, 200),
-                            (int((self.x + 0.5) * CELL_SIZE), int((self.y + 0.5) * CELL_SIZE)), 50)
+                               (int((self.x + 0.5) * CELL_SIZE), int((self.y + 0.5) * CELL_SIZE)), 50)
         elif self.side_of_the_team == 'BLACK':
             pygame.draw.circle(self.screen, (218, 160, 109),
                                (int((self.x + 0.5) * CELL_SIZE), int((self.y + 0.5) * CELL_SIZE)), 50)
@@ -61,46 +61,51 @@ class Checker:
     def pressed(self, mx, my):
         return self.x * CELL_SIZE < mx < (self.x + 1) * CELL_SIZE and self.y * CELL_SIZE < my < (self.y + 1) * CELL_SIZE
 
-    def move_by_dir(self, direction, grid, prog):
+    def move_by_dir(self, grid, prog, last_area_to_move, last_pressed_checker):
         if prog:
-            if direction == 'LEFT':
-                if self.x != 0 and self.y != CELL_NUMBER - 1:
-                    if grid[self.y + 1][self.x - 1].occupied is None:
+            if (last_area_to_move.x - last_pressed_checker.x == 1 and
+                    last_area_to_move.y - last_pressed_checker.y == 1):
+                if self.x != CELL_NUMBER - 1 and self.y != CELL_NUMBER - 1:
+                    if last_area_to_move.occupied is None:
                         grid[self.y][self.x].occupied = None
-                        self.x, self.y = grid[self.y + 1][self.x - 1].x, grid[self.y + 1][self.x - 1].y
+                        self.x, self.y = last_area_to_move.x, last_area_to_move.y
                         return True
-            elif direction == 'RIGHT':
-                if self.x != CELL_NUMBER-1 and self.y != CELL_NUMBER - 1:
-                    if grid[self.y + 1][self.x + 1].occupied is None:
+            elif (last_area_to_move.x - last_pressed_checker.x == -1 and
+                  last_area_to_move.y - last_pressed_checker.y == 1):
+                if self.x != 0 and self.y != CELL_NUMBER - 1:
+                    if last_area_to_move.occupied is None:
                         grid[self.y][self.x].occupied = None
-                        self.x, self.y = grid[self.y + 1][self.x + 1].x, grid[self.y + 1][self.x + 1].y
+                        self.x, self.y = last_area_to_move.x, last_area_to_move.y
                         return True
                 return False
         elif not prog:
-            if direction == 'LEFT':
+            if (last_area_to_move.x - last_pressed_checker.x == -1 and
+                    last_area_to_move.y - last_pressed_checker.y == -1):
                 if self.x != 0 and self.y != 0:
-                    if grid[self.y - 1][self.x - 1].occupied is None:
+                    if last_area_to_move.occupied is None:
                         grid[self.y][self.x].occupied = None
-                        self.x, self.y = grid[self.y - 1][self.x - 1].x, grid[self.y - 1][self.x - 1].y
+                        self.x, self.y = last_area_to_move.x, last_area_to_move.y
                         return True
-            elif direction == 'RIGHT':
+            elif (last_area_to_move.x - last_pressed_checker.x == 1 and
+                  last_area_to_move.y - last_pressed_checker.y == -1):
                 if self.x != CELL_NUMBER - 1 and self.y != 0:
-                    if grid[self.y - 1][self.x + 1].occupied is None:
+                    if last_area_to_move.occupied is None:
                         grid[self.y][self.x].occupied = None
-                        self.x, self.y = grid[self.y - 1][self.x + 1].x, grid[self.y - 1][self.x + 1].y
+                        self.x, self.y = last_area_to_move.x, last_area_to_move.y
                         return True
                 return False
 
 
 class MainController:
+
     def __init__(self, screen):
         self.screen = screen
         self.grid = []
         self.spawn_grid()
         self.checkers = [[], []]  # black and white
         self.spawn_checkers()
-        self.dir = None
-        self.pressed_on_a_checker = None
+        self.last_pressed_checker = None
+        self.last_area_to_move = None
         self.progress = True
         self.score_white_team = 0
         self.score_black_team = 0
@@ -163,70 +168,78 @@ class MainController:
     def check_ways_to_beat_enemy(self):
         try:
             if self.progress:
-                if self.dir == 'LEFT':
-                    if 3 <= self.pressed_on_a_checker.x:
-                        if (self.grid[self.pressed_on_a_checker.y + 1][
-                            self.pressed_on_a_checker.x - 1].occupied.side_of_the_team == 'BLACK' and
-                                self.grid[self.pressed_on_a_checker.y + 2][
-                                    self.pressed_on_a_checker.x - 2].occupied is None):
-                            self.progress = not self.progress
-                            self.dir = 'NOTHING'
-                            self.score_white_team += 5
-                            self.checkers[1].remove(self.grid[self.pressed_on_a_checker.y + 1]
-                                                    [self.pressed_on_a_checker.x - 1].occupied)
-                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x - 2,
-                                                                                        self.pressed_on_a_checker.y + 2)
-                            self.grid[self.pressed_on_a_checker.y - 2][self.pressed_on_a_checker.x + 2].occupied = None
-                            self.grid[self.pressed_on_a_checker.y - 1][self.pressed_on_a_checker.x + 1].occupied = None
+                dist_array_x, dist_array_y = (2, -2), (2, -2)
+                for i in range(len(dist_array_x)):
+                    for j in range(len(dist_array_y)):
+                        if (self.last_area_to_move.x - self.last_pressed_checker.x == dist_array_x[i] and
+                                self.last_area_to_move.y - self.last_pressed_checker.y == dist_array_y[j]):
 
-                elif self.dir == 'RIGHT':
-                    if self.pressed_on_a_checker.y <= CELL_NUMBER - 4:
-                        if (self.grid[self.pressed_on_a_checker.y + 1][
-                            self.pressed_on_a_checker.x + 1].occupied.side_of_the_team == 'BLACK' and
-                                self.grid[self.pressed_on_a_checker.y + 2][
-                                    self.pressed_on_a_checker.x + 2].occupied is None):
-                            self.progress = not self.progress
-                            self.dir = 'NOTHING'
-                            self.score_white_team += 5
-                            self.checkers[1].remove(self.grid[self.pressed_on_a_checker.y + 1]
-                                                             [self.pressed_on_a_checker.x + 1].occupied)
-                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x + 2,
-                                                                                        self.pressed_on_a_checker.y + 2)
-                            self.grid[self.pressed_on_a_checker.y - 2][self.pressed_on_a_checker.x - 2].occupied = None
-                            self.grid[self.pressed_on_a_checker.y - 1][self.pressed_on_a_checker.x - 1].occupied = None
+                            if dist_array_x[i] == -2:
+                                dist_to_the_occupied_block_x = dist_array_x[i] + 1
+                            else:
+                                dist_to_the_occupied_block_x = dist_array_x[i] - 1
+                            if dist_array_y[j] == -2:
+                                dist_to_the_occupied_block_y = dist_array_y[j] + 1
+                            else:
+                                dist_to_the_occupied_block_y = dist_array_y[j] - 1
+
+                            if (self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
+                                self.last_pressed_checker.x + dist_to_the_occupied_block_x
+                                ].occupied.side_of_the_team == 'BLACK' and
+                                    self.grid[self.last_pressed_checker.y + dist_array_y[j]][
+                                        self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
+                                self.progress = not self.progress
+                                self.score_white_team += 5
+                                self.checkers[1].remove(self.grid[self.last_pressed_checker.y +
+                                                                  dist_to_the_occupied_block_y]
+                                                        [self.last_pressed_checker.x +
+                                                         dist_to_the_occupied_block_x].occupied)
+                                self.last_pressed_checker.x, self.last_pressed_checker.y = \
+                                                            (self.last_pressed_checker.x + dist_array_x[i],
+                                                            self.last_pressed_checker.y + dist_array_y[j])
+                                self.grid[self.last_pressed_checker.y - dist_array_y[j]
+                                ][self.last_pressed_checker.x - dist_array_x[i]].occupied = None
+                                self.grid[self.last_pressed_checker.y - dist_to_the_occupied_block_y
+                                ][self.last_pressed_checker.x - dist_to_the_occupied_block_x].occupied = None
+                                self.last_pressed_checker = None
+                                self.last_area_to_move = None
 
             elif not self.progress:
-                if self.dir == 'LEFT':
-                    if 3 <= self.pressed_on_a_checker.x:
-                        if (self.grid[self.pressed_on_a_checker.y - 1][
-                            self.pressed_on_a_checker.x - 1].occupied.side_of_the_team == 'WHITE' and
-                                self.grid[self.pressed_on_a_checker.y - 2][
-                                    self.pressed_on_a_checker.x - 2].occupied is None):
-                            self.progress = not self.progress
-                            self.dir = 'NOTHING'
-                            self.score_black_team += 5
-                            self.checkers[0].remove(self.grid[self.pressed_on_a_checker.y - 1]
-                                                    [self.pressed_on_a_checker.x - 1].occupied)
-                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x - 2,
-                                                                                        self.pressed_on_a_checker.y - 2)
-                            self.grid[self.pressed_on_a_checker.y + 2][self.pressed_on_a_checker.x + 2].occupied = None
-                            self.grid[self.pressed_on_a_checker.y + 1][self.pressed_on_a_checker.x + 1].occupied = None
+                dist_array_x, dist_array_y = (2, -2), (2, -2)
+                for i in range(len(dist_array_x)):
+                    for j in range(len(dist_array_y)):
+                        if (self.last_area_to_move.x - self.last_pressed_checker.x == dist_array_x[i] and
+                                self.last_area_to_move.y - self.last_pressed_checker.y == dist_array_y[j]):
 
-                elif self.dir == 'RIGHT':
-                    if self.pressed_on_a_checker.y <= CELL_NUMBER - 4:
-                        if (self.grid[self.pressed_on_a_checker.y - 1][
-                            self.pressed_on_a_checker.x + 1].occupied.side_of_the_team == 'WHITE' and
-                                self.grid[self.pressed_on_a_checker.y - 2][
-                                    self.pressed_on_a_checker.x + 2].occupied is None):
-                            self.progress = not self.progress
-                            self.dir = 'NOTHING'
-                            self.score_black_team += 5
-                            self.checkers[0].remove(self.grid[self.pressed_on_a_checker.y - 1]
-                                                    [self.pressed_on_a_checker.x + 1].occupied)
-                            self.pressed_on_a_checker.x, self.pressed_on_a_checker.y = (self.pressed_on_a_checker.x + 2,
-                                                                                        self.pressed_on_a_checker.y - 2)
-                            self.grid[self.pressed_on_a_checker.y + 2][self.pressed_on_a_checker.x - 2].occupied = None
-                            self.grid[self.pressed_on_a_checker.y + 1][self.pressed_on_a_checker.x - 1].occupied = None
+                            if dist_array_x[i] == -2:
+                                dist_to_the_occupied_block_x = dist_array_x[i] + 1
+                            else:
+                                dist_to_the_occupied_block_x = dist_array_x[i] - 1
+                            if dist_array_y[j] == -2:
+                                dist_to_the_occupied_block_y = dist_array_y[j] + 1
+                            else:
+                                dist_to_the_occupied_block_y = dist_array_y[j] - 1
+
+                            if (self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
+                                self.last_pressed_checker.x + dist_to_the_occupied_block_x
+                            ].occupied.side_of_the_team == 'WHITE' and
+                                    self.grid[self.last_pressed_checker.y + dist_array_y[j]][
+                                        self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
+                                self.progress = not self.progress
+                                self.score_black_team += 5
+                                self.checkers[0].remove(self.grid[self.last_pressed_checker.y +
+                                                                  dist_to_the_occupied_block_y]
+                                                        [self.last_pressed_checker.x +
+                                                         dist_to_the_occupied_block_x].occupied)
+                                self.last_pressed_checker.x, self.last_pressed_checker.y = \
+                                    (self.last_pressed_checker.x + dist_array_x[i],
+                                     self.last_pressed_checker.y + dist_array_y[j])
+                                self.grid[self.last_pressed_checker.y - dist_array_y[j]
+                                          ][self.last_pressed_checker.x - dist_array_x[i]].occupied = None
+                                self.grid[self.last_pressed_checker.y - dist_to_the_occupied_block_y
+                                          ][self.last_pressed_checker.x - dist_to_the_occupied_block_x].occupied = None
+                                self.last_pressed_checker = None
+                                self.last_area_to_move = None
         except AttributeError:
             pass
 
@@ -245,7 +258,7 @@ class MainController:
         text_score = self.text_score_teams.render(str(self.score_white_team), True, (0, 0, 0))
         self.screen.blit(text_score, (25, 25))
         text_score = self.text_score_teams.render(str(self.score_black_team), True, (0, 0, 0))
-        self.screen.blit(text_score, (CELL_NUMBER*CELL_SIZE-45, CELL_NUMBER*CELL_SIZE-45))
+        self.screen.blit(text_score, (CELL_NUMBER * CELL_SIZE - 45, CELL_NUMBER * CELL_SIZE - 45))
 
     @staticmethod
     def check_neighbors(checker):
@@ -256,14 +269,21 @@ class MainController:
         else:
             return 'LEFT-RIGHT'
 
+    def click_to_area(self, mx, my):
+        for row in self.grid:
+            for block in row:
+                if block.occupied is None:
+                    if (block.x * CELL_SIZE < mx < (block.x + 1) * CELL_SIZE and
+                            block.y * CELL_SIZE < my < (block.y + 1) * CELL_SIZE):
+                        self.last_area_to_move = block
+
     def move(self):
-        try:
-            if self.pressed_on_a_checker.move_by_dir(self.dir, self.grid, self.progress):
-                self.dir = 'NOTHING'
-                self.pressed_on_a_checker = None
+        if self.last_pressed_checker is not None and self.last_area_to_move is not None:
+            if self.last_pressed_checker.move_by_dir(self.grid, self.progress, self.last_area_to_move,
+                                                     self.last_pressed_checker):
+                self.last_area_to_move = None
+                self.last_pressed_checker = None
                 self.progress = not self.progress
-        except AttributeError:
-            pass
 
     def excretion(self):
         if self.progress:
@@ -271,7 +291,7 @@ class MainController:
                 mx, my = pygame.mouse.get_pos()
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
-                    self.pressed_on_a_checker = checker
+                    self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
                     if self.check_neighbors(checker) == 'LEFT-RIGHT':
                         self.grid[checker.y + 1][checker.x + 1].color = 2
@@ -286,7 +306,7 @@ class MainController:
                 mx, my = pygame.mouse.get_pos()
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
-                    self.pressed_on_a_checker = checker
+                    self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
                     if self.check_neighbors(checker) == 'LEFT-RIGHT':
                         self.grid[checker.y - 1][checker.x + 1].color = 2
@@ -312,13 +332,8 @@ def main():
                 sys.exit()
             elif event.type == pygame.MOUSEBUTTONDOWN:
                 main_controller.excretion()
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_a:
-                    main_controller.dir = 'LEFT'
-                elif event.key == pygame.K_d:
-                    main_controller.dir = 'RIGHT'
-                else:
-                    main_controller.dir = 'NOTHING'
+                mx, my = pygame.mouse.get_pos()
+                main_controller.click_to_area(mx, my)
 
         screen.fill((255, 255, 255))
         main_controller.update()
