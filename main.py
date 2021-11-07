@@ -34,12 +34,6 @@ class Cell:
                               CELL_SIZE,
                               CELL_SIZE)
             pygame.draw.rect(self.screen, (0, 255, 0), obj)
-        elif self.color == 3:
-            self.color = self.last_color
-            obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE),
-                              CELL_SIZE,
-                              CELL_SIZE)
-            pygame.draw.rect(self.screen, (255, 0, 0), obj)
         self.size_of_borders = 0
 
 
@@ -156,6 +150,7 @@ class MainController:
 
     def update(self):
         self.add_info_of_occupied_blocks()
+        self.check_win()
         self.draw()
         self.move()
         self.check_ways_to_beat_enemy()
@@ -243,14 +238,16 @@ class MainController:
         except AttributeError:
             pass
 
+    def check_win(self):
+        if len(self.checkers[0]) == 0:
+            print('BLACK TEAM WON')
+        elif len(self.checkers[1]) == 0:
+            print('WHITE TEAM WON')
+
     def draw(self):
         for row in self.grid:
             for block in row:
-                if block.occupied is not None:
-                    block.color = 3
-                else:
-                    block.color = block.last_color
-                block.draw()
+                 block.draw()
         for team in self.checkers:
             for checker in team:
                 checker.draw()
@@ -261,13 +258,31 @@ class MainController:
         self.screen.blit(text_score, (CELL_NUMBER * CELL_SIZE - 45, CELL_NUMBER * CELL_SIZE - 45))
 
     @staticmethod
-    def check_neighbors(checker):
-        if checker.x == 0:
-            return 'LEFT'
-        elif checker.x == CELL_NUMBER - 1:
-            return 'RIGHT'
+    def check_ways(checker, progress):
+        if progress:
+            if checker.x == 0:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'LEFT-DOWN'
+            elif checker.x == CELL_NUMBER - 1:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'RIGHT-DOWN'
+            else:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'LEFT-RIGHT-DOWN'
+                else:
+                    return None
         else:
-            return 'LEFT-RIGHT'
+            if checker.x == 0:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'LEFT-UP'
+            elif checker.x == CELL_NUMBER - 1:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'RIGHT-UP'
+            else:
+                if checker.y != CELL_NUMBER - 1:
+                    return 'LEFT-RIGHT-UP'
+                else:
+                    return None
 
     def click_to_area(self, mx, my):
         for row in self.grid:
@@ -293,12 +308,12 @@ class MainController:
                 if checker.pressed(mx, my):
                     self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
-                    if self.check_neighbors(checker) == 'LEFT-RIGHT':
+                    if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-DOWN':
                         self.grid[checker.y + 1][checker.x + 1].color = 2
                         self.grid[checker.y + 1][checker.x - 1].color = 2
-                    elif self.check_neighbors(checker) == 'LEFT':
+                    elif self.check_ways(checker, self.progress) == 'LEFT-DOWN':
                         self.grid[checker.y + 1][checker.x + 1].color = 2
-                    elif self.check_neighbors(checker) == 'RIGHT':
+                    elif self.check_ways(checker, self.progress) == 'RIGHT-DOWN':
                         self.grid[checker.y + 1][checker.x - 1].color = 2
 
         elif not self.progress:
@@ -308,12 +323,12 @@ class MainController:
                 if checker.pressed(mx, my):
                     self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
-                    if self.check_neighbors(checker) == 'LEFT-RIGHT':
+                    if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-UP':
                         self.grid[checker.y - 1][checker.x + 1].color = 2
                         self.grid[checker.y - 1][checker.x - 1].color = 2
-                    elif self.check_neighbors(checker) == 'LEFT':
+                    elif self.check_ways(checker, self.progress) == 'LEFT-UP':
                         self.grid[checker.y - 1][checker.x + 1].color = 2
-                    elif self.check_neighbors(checker) == 'RIGHT':
+                    elif self.check_ways(checker, self.progress) == 'RIGHT-UP':
                         self.grid[checker.y - 1][checker.x - 1].color = 2
 
 
