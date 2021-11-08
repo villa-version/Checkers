@@ -29,7 +29,6 @@ class Cell:
                               CELL_SIZE - self.size_of_borders)
             pygame.draw.rect(self.screen, (0, 0, 0), obj)
         elif self.color == 2:
-            self.color = self.last_color
             obj = pygame.Rect(int(self.x * CELL_SIZE), int(self.y * CELL_SIZE),
                               CELL_SIZE,
                               CELL_SIZE)
@@ -55,8 +54,8 @@ class Checker:
     def pressed(self, mx, my):
         return self.x * CELL_SIZE < mx < (self.x + 1) * CELL_SIZE and self.y * CELL_SIZE < my < (self.y + 1) * CELL_SIZE
 
-    def move_by_dir(self, grid, prog, last_area_to_move, last_pressed_checker):
-        if prog:
+    def move_by_dir(self, grid, progress, last_area_to_move, last_pressed_checker):
+        if progress:
             if (last_area_to_move.x - last_pressed_checker.x == 1 and
                     last_area_to_move.y - last_pressed_checker.y == 1):
                 if self.x != CELL_NUMBER - 1 and self.y != CELL_NUMBER - 1:
@@ -72,7 +71,7 @@ class Checker:
                         self.x, self.y = last_area_to_move.x, last_area_to_move.y
                         return True
                 return False
-        elif not prog:
+        else:
             if (last_area_to_move.x - last_pressed_checker.x == -1 and
                     last_area_to_move.y - last_pressed_checker.y == -1):
                 if self.x != 0 and self.y != 0:
@@ -104,6 +103,7 @@ class MainController:
         self.score_white_team = 0
         self.score_black_team = 0
         self.text_score_teams = pygame.font.Font(None, 48)
+        self.last_block = []
 
     def spawn_checkers(self):
         white_indent = [1, 0, 1]
@@ -166,8 +166,8 @@ class MainController:
                 dist_array_x, dist_array_y = (2, -2), (2, -2)
                 for i in range(len(dist_array_x)):
                     for j in range(len(dist_array_y)):
-                        if (self.last_area_to_move.x - self.last_pressed_checker.x == dist_array_x[i] and
-                                self.last_area_to_move.y - self.last_pressed_checker.y == dist_array_y[j]):
+                        if (dist_array_x[i] == self.last_area_to_move.x - self.last_pressed_checker.x and
+                                dist_array_y[j] == self.last_area_to_move.y - self.last_pressed_checker.y):
 
                             if dist_array_x[i] == -2:
                                 dist_to_the_occupied_block_x = dist_array_x[i] + 1
@@ -178,9 +178,9 @@ class MainController:
                             else:
                                 dist_to_the_occupied_block_y = dist_array_y[j] - 1
 
-                            if (self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
+                            if ('BLACK' == self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
                                 self.last_pressed_checker.x + dist_to_the_occupied_block_x
-                                ].occupied.side_of_the_team == 'BLACK' and
+                                ].occupied.side_of_the_team and
                                     self.grid[self.last_pressed_checker.y + dist_array_y[j]][
                                         self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
                                 self.progress = not self.progress
@@ -203,8 +203,8 @@ class MainController:
                 dist_array_x, dist_array_y = (2, -2), (2, -2)
                 for i in range(len(dist_array_x)):
                     for j in range(len(dist_array_y)):
-                        if (self.last_area_to_move.x - self.last_pressed_checker.x == dist_array_x[i] and
-                                self.last_area_to_move.y - self.last_pressed_checker.y == dist_array_y[j]):
+                        if (dist_array_x[i] == self.last_area_to_move.x - self.last_pressed_checker.x and
+                                dist_array_y[j] == self.last_area_to_move.y - self.last_pressed_checker.y):
 
                             if dist_array_x[i] == -2:
                                 dist_to_the_occupied_block_x = dist_array_x[i] + 1
@@ -215,9 +215,9 @@ class MainController:
                             else:
                                 dist_to_the_occupied_block_y = dist_array_y[j] - 1
 
-                            if (self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
+                            if ('WHITE' == self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
                                 self.last_pressed_checker.x + dist_to_the_occupied_block_x
-                            ].occupied.side_of_the_team == 'WHITE' and
+                            ].occupied.side_of_the_team and
                                     self.grid[self.last_pressed_checker.y + dist_array_y[j]][
                                         self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
                                 self.progress = not self.progress
@@ -306,14 +306,26 @@ class MainController:
                 mx, my = pygame.mouse.get_pos()
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
+                    if self.last_block:
+                        if len(self.last_block) == 1:
+                            self.last_block[0].color = self.last_block[0].last_color
+                            self.last_block = []
+                        else:
+                            self.last_block[0].color = self.last_block[0].last_color
+                            self.last_block[1].color = self.last_block[1].last_color
+                            self.last_block = []
                     self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
                     if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-DOWN':
+                        self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
+                        self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
                         self.grid[checker.y + 1][checker.x + 1].color = 2
                         self.grid[checker.y + 1][checker.x - 1].color = 2
                     elif self.check_ways(checker, self.progress) == 'LEFT-DOWN':
+                        self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
                         self.grid[checker.y + 1][checker.x + 1].color = 2
                     elif self.check_ways(checker, self.progress) == 'RIGHT-DOWN':
+                        self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
                         self.grid[checker.y + 1][checker.x - 1].color = 2
 
         elif not self.progress:
@@ -321,14 +333,26 @@ class MainController:
                 mx, my = pygame.mouse.get_pos()
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
+                    if self.last_block:
+                        if len(self.last_block) == 1:
+                            self.last_block[0].color = self.last_block[0].last_color
+                            self.last_block = []
+                        else:
+                            self.last_block[0].color = self.last_block[0].last_color
+                            self.last_block[1].color = self.last_block[1].last_color
+                            self.last_block = []
                     self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
                     if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-UP':
+                        self.last_block.append(self.grid[checker.y - 1][checker.x + 1])
+                        self.last_block.append(self.grid[checker.y - 1][checker.x - 1])
                         self.grid[checker.y - 1][checker.x + 1].color = 2
                         self.grid[checker.y - 1][checker.x - 1].color = 2
                     elif self.check_ways(checker, self.progress) == 'LEFT-UP':
+                        self.last_block.append(self.grid[checker.y - 1][checker.x + 1])
                         self.grid[checker.y - 1][checker.x + 1].color = 2
                     elif self.check_ways(checker, self.progress) == 'RIGHT-UP':
+                        self.last_block.append(self.grid[checker.y - 1][checker.x - 1])
                         self.grid[checker.y - 1][checker.x - 1].color = 2
 
 
