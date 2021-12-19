@@ -104,6 +104,8 @@ class MainController:
         self.score_black_team = 0
         self.text_score_teams = pygame.font.Font(None, 48)
         self.last_block = []
+        self.beat_state = False
+        self.beat_dir = None
 
     def spawn_checkers(self):
         white_indent = [1, 0, 1]
@@ -153,90 +155,97 @@ class MainController:
         self.check_win()
         self.draw()
         self.move()
-        self.check_ways_to_beat_enemy()
+        self.beat_an_enemy()
 
     def add_info_of_occupied_blocks(self):
         for team in self.checkers:
             for checker in team:
                 self.grid[checker.y][checker.x].occupied = checker
 
-    def check_ways_to_beat_enemy(self):
-        try:
-            if self.progress:
-                dist_array_x, dist_array_y = (2, -2), (2, -2)
-                for i in range(len(dist_array_x)):
-                    for j in range(len(dist_array_y)):
-                        if (dist_array_x[i] == self.last_area_to_move.x - self.last_pressed_checker.x and
-                                dist_array_y[j] == self.last_area_to_move.y - self.last_pressed_checker.y):
-
-                            if dist_array_x[i] == -2:
-                                dist_to_the_occupied_block_x = dist_array_x[i] + 1
-                            else:
-                                dist_to_the_occupied_block_x = dist_array_x[i] - 1
-                            if dist_array_y[j] == -2:
-                                dist_to_the_occupied_block_y = dist_array_y[j] + 1
-                            else:
-                                dist_to_the_occupied_block_y = dist_array_y[j] - 1
-
-                            if ('BLACK' == self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
-                                self.last_pressed_checker.x + dist_to_the_occupied_block_x
-                                ].occupied.side_of_the_team and
-                                    self.grid[self.last_pressed_checker.y + dist_array_y[j]][
-                                        self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
+    def beat_an_enemy(self):
+        if self.progress:
+            dist_array_x, dist_array_y = (2, -2), (2, -2)
+            for x in dist_array_x:
+                for y in dist_array_y:
+                    dx = x + 1 if x == -2 else x - 1
+                    dy = y + 1 if y == -2 else y - 1
+                    if self.last_area_to_move is not None and self.last_pressed_checker is not None:
+                        if self.сheck_out_ways_to_beat(dx, dy, x, y):
+                            dist_x = self.last_area_to_move.x - self.last_pressed_checker.x
+                            dist_y = self.last_area_to_move.y - self.last_pressed_checker.y
+                            if x == dist_x and y == dist_y:
                                 self.progress = not self.progress
                                 self.score_white_team += 5
                                 self.checkers[1].remove(self.grid[self.last_pressed_checker.y +
-                                                                  dist_to_the_occupied_block_y]
+                                                                  dy]
                                                         [self.last_pressed_checker.x +
-                                                         dist_to_the_occupied_block_x].occupied)
+                                                         dx].occupied)
                                 self.last_pressed_checker.x, self.last_pressed_checker.y = \
-                                                            (self.last_pressed_checker.x + dist_array_x[i],
-                                                            self.last_pressed_checker.y + dist_array_y[j])
-                                self.grid[self.last_pressed_checker.y - dist_array_y[j]
-                                ][self.last_pressed_checker.x - dist_array_x[i]].occupied = None
-                                self.grid[self.last_pressed_checker.y - dist_to_the_occupied_block_y
-                                ][self.last_pressed_checker.x - dist_to_the_occupied_block_x].occupied = None
+                                                            (self.last_pressed_checker.x + x,
+                                                            self.last_pressed_checker.y + y)
+                                self.grid[self.last_pressed_checker.y - y
+                                ][self.last_pressed_checker.x - x].occupied = None
+                                self.grid[self.last_pressed_checker.y - dy
+                                ][self.last_pressed_checker.x - dx].occupied = None
                                 self.last_pressed_checker = None
                                 self.last_area_to_move = None
-
-            elif not self.progress:
-                dist_array_x, dist_array_y = (2, -2), (2, -2)
-                for i in range(len(dist_array_x)):
-                    for j in range(len(dist_array_y)):
-                        if (dist_array_x[i] == self.last_area_to_move.x - self.last_pressed_checker.x and
-                                dist_array_y[j] == self.last_area_to_move.y - self.last_pressed_checker.y):
-
-                            if dist_array_x[i] == -2:
-                                dist_to_the_occupied_block_x = dist_array_x[i] + 1
-                            else:
-                                dist_to_the_occupied_block_x = dist_array_x[i] - 1
-                            if dist_array_y[j] == -2:
-                                dist_to_the_occupied_block_y = dist_array_y[j] + 1
-                            else:
-                                dist_to_the_occupied_block_y = dist_array_y[j] - 1
-
-                            if ('WHITE' == self.grid[self.last_pressed_checker.y + dist_to_the_occupied_block_y][
-                                self.last_pressed_checker.x + dist_to_the_occupied_block_x
-                            ].occupied.side_of_the_team and
-                                    self.grid[self.last_pressed_checker.y + dist_array_y[j]][
-                                        self.last_pressed_checker.x + dist_array_x[i]].occupied is None):
+        else:
+            dist_array_x, dist_array_y = (2, -2), (2, -2)
+            for x in dist_array_x:
+                for y in dist_array_y:
+                    dx = x + 1 if x == -2 else x - 1
+                    dy = y + 1 if y == -2 else y - 1
+                    if self.last_area_to_move is not None and self.last_pressed_checker is not None:
+                        if self.сheck_out_ways_to_beat(dx, dy, x, y):
+                            dist_x = self.last_area_to_move.x - self.last_pressed_checker.x
+                            dist_y = self.last_area_to_move.y - self.last_pressed_checker.y
+                            if x == dist_x and y == dist_y:
                                 self.progress = not self.progress
-                                self.score_black_team += 5
+                                self.score_white_team += 5
                                 self.checkers[0].remove(self.grid[self.last_pressed_checker.y +
-                                                                  dist_to_the_occupied_block_y]
+                                                                  dy]
                                                         [self.last_pressed_checker.x +
-                                                         dist_to_the_occupied_block_x].occupied)
+                                                         dx].occupied)
                                 self.last_pressed_checker.x, self.last_pressed_checker.y = \
-                                    (self.last_pressed_checker.x + dist_array_x[i],
-                                     self.last_pressed_checker.y + dist_array_y[j])
-                                self.grid[self.last_pressed_checker.y - dist_array_y[j]
-                                          ][self.last_pressed_checker.x - dist_array_x[i]].occupied = None
-                                self.grid[self.last_pressed_checker.y - dist_to_the_occupied_block_y
-                                          ][self.last_pressed_checker.x - dist_to_the_occupied_block_x].occupied = None
+                                    (self.last_pressed_checker.x + x,
+                                     self.last_pressed_checker.y + y)
+                                self.grid[self.last_pressed_checker.y - y
+                                          ][self.last_pressed_checker.x - x].occupied = None
+                                self.grid[self.last_pressed_checker.y - dy
+                                          ][self.last_pressed_checker.x - dx].occupied = None
                                 self.last_pressed_checker = None
                                 self.last_area_to_move = None
-        except AttributeError:
-            pass
+
+    def сheck_out_ways_to_beat(self, dist_to_the_occupied_block_x, dist_to_the_occupied_block_y, dist_x, dist_y):
+        dir_x = ['RIGHT', 'LEFT']
+        dir_y = ['UP', 'DOWN']
+        if self.progress:
+            middle_dist_x = self.last_pressed_checker.x + dist_to_the_occupied_block_x
+            middle_dist_y = self.last_pressed_checker.y + dist_to_the_occupied_block_y
+            full_dist_x = self.last_pressed_checker.x + dist_x
+            full_dist_y = self.last_pressed_checker.y + dist_y
+            occupied_block = self.grid[full_dist_y][full_dist_x].occupied
+            if self.grid[middle_dist_y][middle_dist_x].occupied is not None:
+                side_of_the_team = self.grid[middle_dist_y][middle_dist_x].occupied.side_of_the_team
+                if side_of_the_team == 'BLACK' and occupied_block is None:
+                    return True
+                return False
+                #self.beat_state = True
+                #self.beat_dir = [(dir_x[dist_x], dir_y[dist_y]), (
+                #    dist_x, dist_y)]
+                #return True
+            #return False
+        else:
+            middle_dist_x = self.last_pressed_checker.x + dist_to_the_occupied_block_x
+            middle_dist_y = self.last_pressed_checker.y + dist_to_the_occupied_block_y
+            full_dist_x = self.last_pressed_checker.x + dist_x
+            full_dist_y = self.last_pressed_checker.y + dist_y
+            if self.grid[middle_dist_y][middle_dist_x].occupied is not None:
+                side_of_the_team = self.grid[middle_dist_y][middle_dist_x].occupied.side_of_the_team
+                occupied_block = self.grid[full_dist_y][full_dist_x].occupied
+                if side_of_the_team == 'WHITE' and occupied_block is None:
+                    return True
+                return False
 
     def check_win(self):
         if len(self.checkers[0]) == 0:
@@ -247,7 +256,7 @@ class MainController:
     def draw(self):
         for row in self.grid:
             for block in row:
-                 block.draw()
+                block.draw()
         for team in self.checkers:
             for checker in team:
                 checker.draw()
@@ -307,26 +316,53 @@ class MainController:
                 bx, by = checker.x, checker.y
                 if checker.pressed(mx, my):
                     if self.last_block:
-                        if len(self.last_block) == 1:
-                            self.last_block[0].color = self.last_block[0].last_color
-                            self.last_block = []
+                        if not self.beat_state:
+                            if len(self.last_block) == 1:
+                                self.last_block[0].color = self.last_block[0].last_color
+                                self.last_block = []
+                            else:
+                                self.last_block[0].color = self.last_block[0].last_color
+                                self.last_block[1].color = self.last_block[1].last_color
+                                self.last_block = []
                         else:
-                            self.last_block[0].color = self.last_block[0].last_color
-                            self.last_block[1].color = self.last_block[1].last_color
+                            for i in range(len(self.last_block)):
+                                self.last_block[i].color = self.last_block[i].last_color
                             self.last_block = []
                     self.last_pressed_checker = checker
                     self.grid[by][bx].size_of_borders = 5
-                    if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-DOWN':
-                        self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
-                        self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
-                        self.grid[checker.y + 1][checker.x + 1].color = 2
-                        self.grid[checker.y + 1][checker.x - 1].color = 2
-                    elif self.check_ways(checker, self.progress) == 'LEFT-DOWN':
-                        self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
-                        self.grid[checker.y + 1][checker.x + 1].color = 2
-                    elif self.check_ways(checker, self.progress) == 'RIGHT-DOWN':
-                        self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
-                        self.grid[checker.y + 1][checker.x - 1].color = 2
+                    if not self.beat_state:
+                        if self.check_ways(checker, self.progress) == 'LEFT-RIGHT-DOWN':
+                            self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
+                            self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
+                            self.grid[checker.y + 1][checker.x + 1].color = 2
+                            self.grid[checker.y + 1][checker.x - 1].color = 2
+                        elif self.check_ways(checker, self.progress) == 'LEFT-DOWN':
+                            self.last_block.append(self.grid[checker.y + 1][checker.x + 1])
+                            self.grid[checker.y + 1][checker.x + 1].color = 2
+                        elif self.check_ways(checker, self.progress) == 'RIGHT-DOWN':
+                            self.last_block.append(self.grid[checker.y + 1][checker.x - 1])
+                            self.grid[checker.y + 1][checker.x - 1].color = 2
+                    else:
+                        if self.beat_dir[1][0] == -2:
+                            dist_to_the_occupied_block_x = self.beat_dir[1][0] + 1
+                        else:
+                            dist_to_the_occupied_block_x = self.beat_dir[1][0] - 1
+                        if self.beat_dir[1][1] == -2:
+                            dist_to_the_occupied_block_y = self.beat_dir[1][1] + 1
+                        else:
+                            dist_to_the_occupied_block_y = self.beat_dir[1][1] - 1
+                        self.last_block.append(self.grid[checker.y][checker.x])
+                        self.last_block.append(self.grid[checker.y + dist_to_the_occupied_block_y]
+                                                        [checker.x + dist_to_the_occupied_block_x])
+                        self.last_block.append(self.grid[checker.y + self.beat_dir[1][1]][
+                                                         checker.x + self.beat_dir[1][0]])
+                        self.grid[checker.y][checker.x].color = 2
+                        self.grid[checker.y + dist_to_the_occupied_block_y][
+                                  checker.x + dist_to_the_occupied_block_x].color = 2
+                        self.grid[checker.y + self.beat_dir[1][1]][checker.x + self.beat_dir[1][0]].color = 2
+
+
+
 
         elif not self.progress:
             for checker in self.checkers[1]:
